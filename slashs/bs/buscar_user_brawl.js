@@ -1,170 +1,155 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const Discord = require("discord.js");
-const sqlite3 = require('sqlite3').verbose();
-const db_bot = new sqlite3.Database("./BD/db_bot.sqlite");
-const { Client } = require('brawl-api-wrapper');
-const { rolpresi1, rolvice1, rolpresi2, rolvice2, rolpresi3, rolvice3, 
-  rolpresi4, rolvice4, rolpresi5, rolvice5, rolpresi6, rolvice6, rolpresi7, rolvice7 } = require("../../Brawl/rolbrawl.json")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, MessageFlags } from "discord.js";
+import { dbService } from "../../Services/DatabaseService.js";
+import { brawlService } from "../../Services/BrawlStarsService.js";
+import fs from 'fs';
+import path from 'path';
 
-module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("buscar_user_brawl")
-    .setDescription("Muestra el perfil de Brawl Stars de un usuario")
-    .addUserOption(option =>
-      option.setName("usuario")
-        .setDescription("Busca al usuario a través del usuario de Discord")
-        .setRequired(false)
-    )
-    .addStringOption(option =>
-      option.setName("nombre_brawl")
-        .setDescription("Busca al usuario a través del nombre en Brawl Stars")
-        .setRequired(false)
-    )
-    .addStringOption(option =>
-      option.setName("tag_brawl")
-        .setDescription("Busca al usuario a través del tag en Brawl Stars")
-        .setRequired(false)
-    ),
+// Load Roles Config
+const rolBrawlPath = path.join(process.cwd(), "Brawl", "rolbrawl.json");
+const rolesConfig = JSON.parse(fs.readFileSync(rolBrawlPath, "utf-8"));
+const rolesPermitidos = [
+    rolesConfig.rolpresi1, rolesConfig.rolvice1, rolesConfig.rolpresi2, rolesConfig.rolvice2,
+    rolesConfig.rolpresi3, rolesConfig.rolvice3, rolesConfig.rolpresi4, rolesConfig.rolvice4,
+    rolesConfig.rolpresi5, rolesConfig.rolvice5, rolesConfig.rolpresi6, rolesConfig.rolvice6,
+    rolesConfig.rolpresi7, rolesConfig.rolvice7,
+    '708352560964304957', '749181768980103199', '841323449867567144'
+];
 
-  async run(client, int) {
-    await int.deferReply();
-    try {
+export default {
+    data: new SlashCommandBuilder()
+        .setName("buscar_user_brawl")
+        .setDescription("Muestra el perfil de Brawl Stars de un usuario")
+        .addUserOption(option =>
+            option.setName("usuario")
+                .setDescription("Busca al usuario a través del usuario de Discord")
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName("nombre_brawl")
+                .setDescription("Busca al usuario a través del nombre en Brawl Stars (Lento)")
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName("tag_brawl")
+                .setDescription("Busca al usuario a través del tag en Brawl Stars")
+                .setRequired(false)
+        ),
 
-      const rolesPermitidos = [rolpresi1, rolpresi2, rolpresi3, rolpresi4, rolpresi5, rolpresi6, rolpresi7, 
-        rolvice1, rolvice2, rolvice3, rolvice4, rolvice5, rolvice6, rolvice7, '708352560964304957', '749181768980103199', '841323449867567144']; // Reemplaza con los IDs de los roles permitidos
+    async run(client, int) {
+        await int.deferReply();
 
-      // Verificar si el usuario tiene algún rol permitido
-      const miembro = int.member;
-      if (!miembro.roles.cache.some(rol => rolesPermitidos.includes(rol.id))) {
-        const embed = new Discord.EmbedBuilder()
-          .setAuthor({ name: 'Team Galaxy' })
-          .setColor(0xFF0000)
-          .setTitle(":no_entry: Permiso denegado")
-          .setDescription("No tienes los permisos necesarios para usar este comando.")
-          .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-        return int.editReply({ embeds: [embed] });
-      }
-      const { tokenb, idserver } = require("../../Id,typ.json");
-      const clienta = new Client(tokenb);
-
-      const user = int.options.getUser("usuario");
-      const nombreBrawl = int.options.getString("nombre_brawl");
-      const tagBrawl = int.options.getString("tag_brawl");
-
-      if (user) {
-        // Buscar el perfil mediante el usuario de Discord
-        db_bot.get(`SELECT * FROM usuariosbrawl WHERE id = ?`, [user.id], async (err, filas) => {
-          if (err) return console.error(`Error en la consulta SQL: ${err.message}`);
-          if (!filas) {
-            const embed = new Discord.EmbedBuilder()
-              .setAuthor({ name: 'Team Galaxy' })
-              .setColor(0xFFFB00)
-              .setTitle(`${user.username} no tiene un perfil creado`)
-              .setDescription("Usa el comando /crear_perfil_bs para crear uno.")
-              .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-            return int.editReply({ embeds: [embed] });
-          }
-
-          const bs_id = filas.tag;
-          const jugador = await clienta.getPlayer(bs_id, false);
-
-          const embed = new Discord.EmbedBuilder()
-            .setAuthor({ name: 'Team Galaxy' })
-            .setTitle(`Perfil de ${jugador.name}`)
-            .setDescription(`**Usuario Discord:** <@${user.id}>\n**Nombre Brawl:** ${jugador.name}\n**Tag Brawl:** ${jugador.tag}\n**Club:** ${jugador.club.name || 'Sin Club'}`)
-            .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-          return int.editReply({ embeds: [embed] });
-        });
-      } else if (tagBrawl) {
-        // Buscar el perfil mediante el tag de Brawl
-        db_bot.get(`SELECT * FROM usuariosbrawl WHERE tag = ?`, [tagBrawl], async (err, filas) => {
-          if (err) return console.error(`Error en la consulta SQL: ${err.message}`);
-          if (!filas) {
-            const embed = new Discord.EmbedBuilder()
-              .setAuthor({ name: 'Team Galaxy' })
-              .setColor(0xFFFB00)
-              .setTitle("Usuario no registrado")
-              .setDescription("El usuario con ese tag no está registrado en nuestra base de datos.")
-              .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-            return int.editReply({ embeds: [embed] });
-          }
-
-          const bs_id = filas.tag;
-          const id = filas.id
-          const jugador = await clienta.getPlayer(bs_id, false);
-
-          const embed = new Discord.EmbedBuilder()
-            .setAuthor({ name: 'Team Galaxy' })
-            .setTitle(`Perfil de ${jugador.name}`)
-            .setDescription(`**Usuario Discord:** <@${id}>\n**Nombre Brawl:** ${jugador.name}\n**Tag Brawl:** ${jugador.tag}\n**Club:** ${jugador.club.name || 'Sin Club'}`)
-            .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-          return int.editReply({ embeds: [embed] });
-        });
-      } else if (nombreBrawl) {
-        // Buscar usuarios registrados que coincidan con el nombre en Brawl Stars
-        db_bot.all('SELECT * FROM usuariosbrawl', async (err, usuarios) => {
-          if (err) return console.error(`Error en la consulta SQL: ${err.message}`);
-
-          const validUsuarios = [];
-          const guild = client.guilds.cache.get(idserver);
-          if (!guild) return console.error(`Guild con ID '${idserver}' no encontrada.`);
-
-          for (const usuario of usuarios) {
-            const bs_id = usuario.tag;
-            try {
-              const jugador = await clienta.getPlayer(bs_id, true);
-              const member = guild.members.cache.get(usuario.id);
-              if (!member) {
-                console.error(`${usuario.id} no está en el servidor.`);
-                db_bot.run(`DELETE FROM usuariosbrawl WHERE id = ?`, [usuario.id], function (err) {
-                  if (err) return console.log(`Error al eliminar de la base de datos: ${err.message}`);
-                });
-                continue;
-              }
-
-              if (jugador.name.toLowerCase() === nombreBrawl.toLowerCase()) {
-                validUsuarios.push({
-                  id: usuario.id,
-                  name: jugador.name,
-                  tag: jugador.tag,
-                  club: jugador.club
-                });
-              }
-            } catch (error) {
-              console.error(`Error obteniendo datos del jugador con tag ${bs_id}:`, error);
+        try {
+            // Permission Check
+            const miembro = int.member;
+            if (!miembro.roles.cache.some(rol => rolesPermitidos.includes(rol.id))) {
+                const embedPerms = new EmbedBuilder()
+                    .setAuthor({ name: 'Team Galaxy' })
+                    .setColor(0xFF0000)
+                    .setTitle(":no_entry: Permiso denegado")
+                    .setDescription("No tienes los permisos necesarios para usar este comando.")
+                    .setFooter({ text: `Solicitado por: ${int.member.displayName}` });
+                return int.editReply({ embeds: [embedPerms] });
             }
-          }
 
-          if (validUsuarios.length === 0) {
-            const embed = new Discord.EmbedBuilder()
-              .setAuthor({ name: 'Team Galaxy' })
-              .setColor(0xFFFB00)
-              .setTitle("Usuario no encontrado")
-              .setDescription(`No se encontró ningún jugador registrado con el nombre **${nombreBrawl}**.`)
-              .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-            return int.editReply({ embeds: [embed] });
-          }
+            const userOpt = int.options.getUser("usuario");
+            const nombreBrawlOpt = int.options.getString("nombre_brawl");
+            const tagBrawlOpt = int.options.getString("tag_brawl");
 
-          const embed = new Discord.EmbedBuilder()
-            .setAuthor({ name: 'Team Galaxy' })
-            .setTitle(`Usuarios encontrados con el nombre ${nombreBrawl}`)
-            .setColor(0x00FF00)
-            .setDescription(
-                validUsuarios.map(u => `**Usuario Discord:** <@${u.id}>\n**Nombre Brawl:** ${u.name}\n**Tag Brawl:** ${u.tag}\n**Club:** ${u.club.name || 'Sin Club'}`).join("\n\n")
-              )
-            .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName });
-          int.editReply({ embeds: [embed] });
-        });
-      } else {
-        int.editReply("Por favor, especifica al menos una opción para buscar.");
-      }
-    } catch (err) {
-      console.error("Error en la ejecución del comando:", err);
-      const embedError = new Discord.EmbedBuilder()
-        .setAuthor({ name: 'Team Galaxy' })
-        .setColor(0xFF0000)
-        .setDescription(":bangbang: Error inesperado en la ejecución del comando :bangbang:");
-      int.editReply({ embeds: [embedError] });
+            if (userOpt) {
+                // Search by Discord User
+                const fila = await dbService.bot.get(`SELECT * FROM usuariosbrawl WHERE id = ?`, [userOpt.id]);
+                if (!fila) {
+                    return int.editReply({
+                        embeds: [new EmbedBuilder()
+                            .setColor(0xFFFB00)
+                            .setTitle("Usuario no encontrado")
+                            .setDescription(`<@${userOpt.id}> no tiene un perfil en la base de datos.`)
+                        ]
+                    });
+                }
+                const jugador = await brawlService.getPlayer(fila.tag);
+                await sendPlayerEmbed(int, jugador, userOpt.id);
+
+            } else if (tagBrawlOpt) {
+                // Search by Tag (DB Lookup first to find owner, else just API)
+                const finalTag = (tagBrawlOpt.startsWith("#") ? tagBrawlOpt : "#" + tagBrawlOpt).toUpperCase().replace("O","0");
+                
+                const fila = await dbService.bot.get(`SELECT * FROM usuariosbrawl WHERE tag = ?`, [finalTag]);
+                const jugador = await brawlService.getPlayer(finalTag);
+                
+                await sendPlayerEmbed(int, jugador, fila ? fila.id : null);
+
+            } else if (nombreBrawlOpt) {
+                // Search by Name (Scan all DB users)
+                const rows = await dbService.bot.all('SELECT * FROM usuariosbrawl');
+                const validUsuarios = [];
+                const guild = int.guild; // Optimization: Use int.guild directly if possible or fetched
+
+                await int.editReply({ content: "🔎 Buscando usuarios... esto puede tardar unos segundos..." });
+
+                // Process in chunks of 10 to avoid rate limits
+                 const chunkSize = 10;
+                 for (let i = 0; i < rows.length; i += chunkSize) {
+                    const chunk = rows.slice(i, i + chunkSize);
+                    const promises = chunk.map(async (row) => {
+                        // Check guild membership first (fast)
+                        if (!guild.members.cache.has(row.id)) return null;
+
+                        try {
+                            // Fetch player from API (cached by service)
+                            const p = await brawlService.getPlayer(row.tag);
+                            if (p.name.toLowerCase() === nombreBrawlOpt.toLowerCase()) {
+                                return {
+                                    id: row.id,
+                                    name: p.name,
+                                    tag: p.tag,
+                                    club: p.club
+                                };
+                            }
+                        } catch (e) {
+                            return null;
+                        }
+                    });
+                    
+                    const results = await Promise.all(promises);
+                    validUsuarios.push(...results.filter(r => r !== null));
+                 }
+
+                 if (validUsuarios.length === 0) {
+                     return int.editReply({ content: null, embeds: [new EmbedBuilder().setColor(0xFFFB00).setDescription(`No se encontró nadie con el nombre **${nombreBrawlOpt}**.`)] });
+                 }
+
+                 // Show results
+                 const embedResults = new EmbedBuilder()
+                    .setAuthor({ name: 'Team Galaxy' })
+                    .setColor(0x00FF00)
+                    .setTitle(`Usuarios encontrados: ${nombreBrawlOpt}`)
+                    .setDescription(validUsuarios.map(u => 
+                        `**Usuario:** <@${u.id}>\n**Nombre:** ${u.name}\n**Tag:** ${u.tag}\n**Club:** ${u.club ? u.club.name : 'Sin Club'}`
+                    ).join("\n\n"))
+                    .setFooter({ text: `Solicitado por: ${int.member.displayName}` });
+
+                 await int.editReply({ content: null, embeds: [embedResults] });
+
+            } else {
+                 int.editReply("Debes especificar un usuario, un tag o un nombre.");
+            }
+
+        } catch (error) {
+            console.error("Error in buscar_user_brawl:", error);
+            int.editReply({ content: "Ocurrió un error al buscar el usuario (posiblemente API caída o tag inválido)." });
+        }
     }
-  }
 };
+
+async function sendPlayerEmbed(int, jugador, discordId) {
+    const embed = new EmbedBuilder()
+        .setAuthor({ name: 'Team Galaxy' })
+        .setTitle(`Perfil de ${jugador.name}`)
+        .setColor(0xFFFB00)
+        .setDescription(`**Nombre Brawl:** ${jugador.name}\n**Tag Brawl:** ${jugador.tag}\n**Club:** ${jugador.club ? jugador.club.name : 'Sin Club'}\n${discordId ? `**Usuario Discord:** <@${discordId}>` : '**Usuario Discord:** No registrado'}`)
+        .setFooter({ text: `Solicitado por: ${int.member.displayName}` });
+    
+    await int.editReply({ content: null, embeds: [embed] });
+}

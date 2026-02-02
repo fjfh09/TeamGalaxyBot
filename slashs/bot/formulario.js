@@ -1,9 +1,9 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { ButtonStyle } = require('discord.js');
-const { ActionRowBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+import { SlashCommandBuilder } from "@discordjs/builders"
+import Discord from "discord.js"
+import { ButtonStyle } from 'discord.js';
+import { ActionRowBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
     .setName("formulario")
     .setDescription("Dame ideas para mejorarme"),

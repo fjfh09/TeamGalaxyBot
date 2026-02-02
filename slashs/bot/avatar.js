@@ -1,38 +1,28 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("avatar")
-    .setDescription("Puedes ver el avatar de quien quieras")
-    .addUserOption(option =>
-        option.setName("usuario")
-        .setDescription("Selecciona un usuario")
-        .setRequired(false)
-    ),
+        .setName("avatar")
+        .setDescription("Muestra el avatar de un usuario")
+        .addUserOption(option =>
+            option.setName("usuario")
+                .setDescription("Usuario (opcional)")
+                .setRequired(false)
+        ),
 
-    async run(client, int){
-
-        let user;
-        if (int.options.getUser("usuario")) {
-            user = int.options.getUser("usuario");
-        }else{
-            user = int.user;
-        }
-
-        let usuario;
-        if (int.options.getUser("usuario")) {
-            usuario = int.options.getUser("usuario").username;
-        }else{
-            usuario = int.user.username;
-        }
-
-        const embed = new Discord.EmbedBuilder()
-            .setTitle(`Foto de ${usuario}.`)
-            .setAuthor({name: 'Team Galaxy'})
+    async run(client, int) {
+        await int.deferReply();
+        
+        const user = int.options.getUser("usuario") || int.user;
+        
+        const embed = new EmbedBuilder()
+            .setTitle(`Avatar de ${user.username}`)
+            .setImage(user.displayAvatarURL({ dynamic: true, size: 4096 }))
             .setColor(0x00FF08)
-            .setImage(user.displayAvatarURL({ dynamic: false }))
-            .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-        int.reply({ embeds: [embed]})
+            .setFooter({ text: `Solicitado por ${int.member.displayName}` })
+            .setTimestamp();
+
+        await int.editReply({ embeds: [embed] });
     }
-}
+};

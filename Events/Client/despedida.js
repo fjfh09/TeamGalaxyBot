@@ -1,6 +1,6 @@
-const Discord = require("discord.js");
-const { ChannelType } = require("discord.js");
-module.exports = {
+import Discord from "discord.js";
+import { ChannelType } from "discord.js";
+export default {
     name: "guildMemberRemove",
     once: false,
     async execute(client, member) {

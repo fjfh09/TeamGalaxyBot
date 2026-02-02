@@ -1,78 +1,38 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const ms = require("ms")
-const { MessageFlags } = require('discord.js');
-module.exports = {
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, MessageFlags, PermissionsBitField } from "discord.js";
+import ms from "ms";
+
+export default {
     data: new SlashCommandBuilder()
-    .setName("limpiar")
-    .setDescription("Puedes eliminar el exceso de mensajes")
-    .addIntegerOption(option =>
-        option.setName("cantidad")
-        .setDescription("Pon el numero de mensajes que quieres borrar")
-        .setRequired(true)
-    ),
+        .setName("limpiar")
+        .setDescription("Elimina mensajes del canal")
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageMessages)
+        .addIntegerOption(option =>
+            option.setName("cantidad")
+                .setDescription("Número de mensajes a borrar (1-100)")
+                .setMinValue(1)
+                .setMaxValue(100)
+                .setRequired(true)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply({ flags: MessageFlags.Ephemeral });
+        const cantidad = int.options.getInteger("cantidad");
 
-        const cantidad = int.options.getInteger("cantidad")
+        try {
+            const deleted = await int.channel.bulkDelete(cantidad, true);
+            const count = deleted.size;
+            
+            let message = `✅ Se han borrado **${count}** mensajes.`;
+            if (count < cantidad) {
+                message += `\n⚠️ No se pudieron borrar ${cantidad - count} mensajes porque son mayores a 14 días.`;
+            }
 
-      let permiso = int.member.permissions.has("ManageMessages")
-      if(!permiso){
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(":x: No tienes los permisos suficientes para realizar esta acción")
-        .setColor("Red") 
-        .setFooter({text: "Creado por fjfh"})
-        .setTimestamp()
-        return int.reply({embeds: [embed]})
-      }
+            await int.editReply(message);
 
-      if(cantidad <= "0"){
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(":x: La cantidad no puede ser menor o igual a 0")
-        .setColor("Red") 
-        .setFooter({text: "Creado por fjfh"})
-        .setTimestamp()
-        return int.reply({embeds : [embed]})  
-      }
-        
-      if(cantidad >= "100"){
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(":x: La cantidad no puede ser mayor o igual a 100")
-        .setColor("Red")  
-        .setFooter({text: "Creado por fjfh"})
-        .setTimestamp()
-        return int.reply({embeds: [embed]})
-        }
-
-      
-      const messages = await int.channel.messages.fetch({ limit: cantidad})
-      const filtered = messages.filter((msg) => Date.now() - msg.createdTimestamp < ms("14 days"))
-      const days = messages.filter((msg) => Date.now() - msg.createdTimestamp > ms("14 days"))
-
-      let mensaje;
-      if (filtered.size  <= 1) {
-        mensaje = "mensaje"
-      } else if (filtered.size  >= 1) {
-        mensaje = "mensajes"
-      }
-      
-      
-     
-          if(days.size === 0){
-     await int.channel.bulkDelete(filtered.size
-      ).then(() => {
-        return int.reply({content:`Se han borrado ${filtered.size} ${mensaje}`, flags: MessageFlags.Ephemeral})
-      })
-          }
-      
-         
-       if(filtered.size === 0){
-          return int.reply({content:"No he podido borrar ningun mensaje de este canal porque todos los mensajes se crearon hace más de 14 días", flags: MessageFlags.Ephemeral})
-       }
-         if(days.size !== 0){
-         await int.channel.bulkDelete(filtered.size ).then(() => {
-           return int.reply({content: `Se han borrado ${filtered.size} ${mensaje} porque algunos de los mensajes que has dicho tienen más de 14 días y no los puedo borrar`, flags: MessageFlags.Ephemeral})
-         })
+        } catch (error) {
+            console.error(error);
+            await int.editReply("❌ Ocurrió un error al intentar borrar mensajes.");
         }
     }
-}
+};

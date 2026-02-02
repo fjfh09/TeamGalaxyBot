@@ -1,32 +1,34 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("bot")
-    .setDescription("Te doy mi información"),
+        .setName("bot")
+        .setDescription("Muestra información detallada sobre el bot"),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-        let emoji = "📌"
-        let emoji1 = "🗓"
-        let { prefix } = require("../../Id,typ.json")
+        const serverCount = client.guilds.cache.size;
+        const commandCount = client.slashCommands ? client.slashCommands.size : "70+";
+        const ping = client.ws.ping;
+        const emojiPin = "📌";
+        const emojiStats = "📊";
 
-        const embed = new Discord.EmbedBuilder()
+        const embed = new EmbedBuilder()
             .setThumbnail(client.user.displayAvatarURL({ dynamic: true }))
-            .setTitle("Menu de ayuda "+emoji1+" "+int.user.username)
+            .setTitle(`Información de ${client.user.username}`)
             .setDescription(
-                `> ${emoji} \`|\` Prefix \`${prefix}\`\n> ${emoji} \`|\` Comandos \`77\`\n> ${emoji} \`|\` Servidores \`${client.guilds.cache.size}\`\n> ${emoji} \`|\` Ping \`${client.ws.ping}ms\`\n\n**\`\`\`Hola ${int.user.username}, Para ver mis comandos utiliza: /ayuda\`\`\`**`
+                `> ${emojiStats} \`|\` **Comandos:** \`${commandCount}\`\n> ${emojiPin} \`|\` **Servidores:** \`${serverCount}\`\n> 📶 \`|\` **Ping:** \`${ping}ms\`\n\n**Hola ${int.user.username}, para ver todos mis comandos usa** \`/ayuda\``
             )
             .setColor("#1A1A1A")
-            .addFields(
-                {
-                name: ":gear: • **Soporte**", 
-                value: "Si tienes alguna duda del bot ve a <#907349681108041778> donde te podremos atender"
-                }
-            )
-            .setFooter({text: "Creado por fjfh", iconURL: int.guild.iconURL({ dynamic: true })})
-            .setTimestamp()
-        int.reply({ embeds: [embed]})
+            .addFields({
+                name: ":gear: • **Soporte**",
+                value: "Si encuentras algún error o tienes dudas, contacta al staff en <#907349681108041778>."
+            })
+            .setFooter({ text: "Desarrollado por el equipo de Team Galaxy", iconURL: int.guild.iconURL() })
+            .setTimestamp();
+
+        await int.editReply({ embeds: [embed] });
     }
-}
+};

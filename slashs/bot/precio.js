@@ -1,23 +1,25 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const axios = require("axios")
+import { SlashCommandBuilder } from "@discordjs/builders";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("precio")
-    .setDescription("Te doy el precio del ordenador"),
+        .setName("precio")
+        .setDescription("Consulta el precio de un producto específico (Demo)"),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
+
         try {
-            // Hacer una solicitud a la página de búsqueda de PC Componentes
-            const response = await fetch('https://www.pccomponentes.com/api/articles/10810270/buybox').then((res) => res.json())
-            const price = response.originalPrice
+            const response = await fetch('https://www.pccomponentes.com/api/articles/10810270/buybox');
+            if (!response.ok) throw new Error("API Error");
+            
+            const data = await response.json();
+            const price = data.originalPrice;
 
-            // Enviar el precio como mensaje
-            int.reply(`El precio de https://www.pccomponentes.com/msi-katana-15-b13vfk-1854xes-intel-core-i7-13700h-16gb-1tb-ssd-rtx-4060-156 en PC Componentes es ${price} euros.`);
+            await int.editReply(`💻 El precio del **MSI Katana 15** en PC Componentes es **${price}€**.\n🔗 [Ver Producto](https://www.pccomponentes.com/msi-katana-15-b13vfk-1854xes-intel-core-i7-13700h-16gb-1tb-ssd-rtx-4060-156)`);
+
         } catch (error) {
-            console.error('Error al obtener el precio:', error);
-            int.reply('Hubo un error al obtener el precio del producto.');
+            console.error('Error precio:', error);
+            await int.editReply('❌ No se pudo obtener el precio en este momento.');
         }
     }
-}
+};

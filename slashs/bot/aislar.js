@@ -1,50 +1,64 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const ms = require("ms")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, PermissionsBitField } from "discord.js";
+import ms from "ms";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("aislar")
-    .setDescription("Aisla a un miembro del servidor")
-    .addUserOption(option =>
-        option.setName("usuario")
-        .setDescription("Especifica un usuario para aislar")
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName("tiempo")
-        .setDescription("Especifica el tiempo del aislamiento")
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName("razon")
-        .setDescription("Especifica la razon del aislamiento")
-        .setRequired(true)
-    ),
+        .setName("aislar")
+        .setDescription("Aísla (timeout) a un miembro del servidor")
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.ModerateMembers)
+        .addUserOption(option =>
+            option.setName("usuario")
+                .setDescription("Usuario a aislar")
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName("tiempo")
+                .setDescription("Duración (ej: 1h, 10m)")
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName("razon")
+                .setDescription("Razón del aislamiento")
+                .setRequired(true)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-        const user = int.options.getMember("usuario")
-        const tiempo = int.options.getString("tiempo")
-        const razon = int.options.getString("razon")
-  
-        let permisos = int.member.permissions.has("ModerateMembers")
-        if(!permisos) return int.reply("No tienes suficientes permisos")
-  
-        const miembro = await int.guild.members.fetch(user.id)
-  
-        if(miembro.isCommunicationDisabled()) return int.reply("Ese miembro ya esta aislado")
-  
-        const time = ms(tiempo)
-  
-        await miembro.timeout(time, razon)
+        const user = int.options.getUser("usuario");
+        const tiempo = int.options.getString("tiempo");
+        const razon = int.options.getString("razon");
+        
+        try {
+            const member = await int.guild.members.fetch(user.id);
 
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(`${user.user.username} ha sido aislado correctamente`)
-        .setDescription(`**Tiempo:** ${tiempo}\n**Razón:** ${razon}`)
-        .setFooter({ text: int.user.tag, iconURL: int.user.displayAvatarURL({ dynamic: true }) })
-        .setTimestamp()
-        .setColor("Red")
-        int.reply({ embeds: [embed], fetchReply: true }).then(m => setTimeout(() => m.delete(), time))
+            if (member.isCommunicationDisabled()) {
+                return int.editReply("❌ Este usuario ya está aislado.");
+            }
+
+            // Check hierarchy
+            if (!member.moderatable) {
+                return int.editReply("❌ No puedo aislar a este usuario (rol superior o igual al mío).");
+            }
+
+            const timeMs = ms(tiempo);
+            if (!timeMs) return int.editReply("❌ Formato de tiempo inválido.");
+
+            await member.timeout(timeMs, razon);
+
+            const embed = new EmbedBuilder()
+                .setTitle(`⛔ Usuario Aislado`)
+                .setDescription(`**Usuario:** ${user.tag}\n**Tiempo:** ${tiempo}\n**Razón:** ${razon}`)
+                .setFooter({ text: `Moderador: ${int.user.tag}` })
+                .setColor("Red")
+                .setTimestamp();
+
+            await int.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error(error);
+            await int.editReply("❌ Error al intentar aislar al usuario (posiblemente no está en el servidor o error de API).");
+        }
     }
-}
+};

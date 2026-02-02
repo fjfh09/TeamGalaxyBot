@@ -1,46 +1,46 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const {GoogleGenerativeAI} = require("@google/generative-ai");
-const { geminiAPIKey} = require("../../Id,typ.json")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-module.exports = {
+const geminiAPIKey = process.env.GEMINI_API_KEY;
+
+export default {
     data: new SlashCommandBuilder()
-    .setName("preguntar")
-    .setDescription("Ha una pregunta a la IA")
-    .addStringOption(option =>
-        option.setName("pregunta")
-           .setDescription("La pregunta que quiere consultar")
-           .setRequired(true)
-    ),
+        .setName("preguntar")
+        .setDescription("Haz una pregunta a la IA (Gemini)")
+        .addStringOption(option =>
+            option.setName("pregunta")
+                .setDescription("Tu consulta")
+                .setRequired(true)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        if (!geminiAPIKey) {
+            return int.reply({ content: "❌ La API Key de Gemini no está configurada.", ephemeral: true });
+        }
+
         await int.deferReply();
         const pregunta = int.options.getString("pregunta");
-        const genAI = new GoogleGenerativeAI(geminiAPIKey);
 
-        const systemInstruction = `Se amable y simpatico en tus respuestas, Debes responder a todo lo que te pregunten. El usuario que te esta hablando es: ${int.user.displayName}`;
+        try {
+            const genAI = new GoogleGenerativeAI(geminiAPIKey);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-2.0-flash",
+                systemInstruction: `Eres un asistente útil y amable de Team Galaxy. Responde concisamente. Usuario: ${int.user.displayName}`,
+            });
 
-        const modelo = genAI.getGenerativeModel({model: "gemini-2.0-flash", systemInstruction});
-        const parts = [
-            {text: `input: Responde a todo`},
-            {text: `output: Debes saber todo lo que te pregunten y responder`},
-            {text: `input: ${pregunta}`},
-            {text: `output: `}
-        ];
-        const generationConfig = {
-            maxOutputTokens:400
+            const result = await model.generateContent(pregunta);
+            const response = result.response.text();
+
+            let finalResponse = response;
+            if (response.length > 2000) {
+                finalResponse = response.substring(0, 1990) + "... (truncado)";
+            }
+
+            await int.editReply(finalResponse);
+
+        } catch (error) {
+            console.error("Gemini Error:", error);
+            await int.editReply("❌ Ocurrió un error al consultar a la IA.");
         }
-        const result = await modelo.generateContent({
-            contents: [
-                {
-                    role: "user",
-                    parts,
-                }
-            ],
-            generationConfig,
-        });
-        int.editReply({
-            content: result.response.text()
-        });
     }
-}
+};

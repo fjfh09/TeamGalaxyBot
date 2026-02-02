@@ -1,28 +1,39 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const ms = require("ms")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
+import { dbService } from "../../Services/DatabaseService.js";
 
-const sqlite3 = require('sqlite3').verbose();
-const db_cartera = new sqlite3.Database("./BD/db_cartera.sqlite");
-
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("cartera")
-    .setDescription("Revisa tu credito dell casino"),
+        .setName("cartera")
+        .setDescription("Revisa tu crédito del casino"),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-        db_cartera.get(`SELECT * FROM usuarios WHERE id = ${int.member.id}`, async (err, filas) => {
-            if(err) return console.log(err.message + ` ${message.content} ERROR #1 comando "cartera" => ${message.content}`)
-            if(!filas) return int.reply({ embeds: [new Discord.EmbedBuilder().setDescription(`:money_with_wings: **¡Eres pobre! No tienes nada en la cartera**`).setColor(0x95F5FC)]})
-            if(filas.monedas === 0) return int.reply({ embeds: [new Discord.EmbedBuilder().setDescription(`:money_with_wings: **¡Eres pobre! No tienes nada en la cartera**`).setColor(0x95F5FC)]})
-            let embed = new Discord.EmbedBuilder()
-              .setDescription(`**:credit_card: __CARTERA DEL CASINO__**\n\n**Monedas del casino:** ${filas.monedas} :diamond_shape_with_a_dot_inside:`)
-              .setColor(0x95F5FC)
-              .setThumbnail(int.user.displayAvatarURL({ dynamic: false }))
-              .setTimestamp();
-            return int.reply({ embeds: [embed]});
-          });
+        try {
+            const user = await dbService.cartera.get("SELECT * FROM usuarios WHERE id = ?", [int.member.id]);
+            const monedas = user ? user.monedas : 0;
 
+            if (monedas <= 0) {
+                return int.editReply({ 
+                    embeds: [new EmbedBuilder()
+                        .setDescription(`💸 **¡Estás en bancarrota! No tienes monedas.**`)
+                        .setColor(0x95F5FC)
+                    ]
+                });
+            }
+
+            const embed = new EmbedBuilder()
+                .setDescription(`**:credit_card: __CARTERA DEL CASINO__**\n\n**Monedas:** ${monedas} 💠`)
+                .setColor(0x95F5FC)
+                .setThumbnail(int.user.displayAvatarURL())
+                .setTimestamp();
+
+            await int.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error(error);
+            await int.editReply("❌ Error al consultar la cartera.");
+        }
     }
-}
+};

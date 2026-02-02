@@ -1,40 +1,44 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const axios = require("axios");
-const os = require("os")
-const pidusage = require("pidusage")
-const { MessageFlags } = require('discord.js');
-module.exports = {
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, MessageFlags } from "discord.js";
+import os from "os";
+import pidusage from "pidusage";
+
+export default {
     data: new SlashCommandBuilder()
-    .setName("pc")
-    .setDescription("Obtienes la información de la raspberry"),
+        .setName("pc")
+        .setDescription("Obtienes la información del servidor"),
 
-    async run(client, int){
-        const id = "739203308991807518";
+    async run(client, int) {
+        if (int.user.id !== "739203308991807518") {
+            return int.reply({ content: "No tienes permisos para usar este comando.", flags: MessageFlags.Ephemeral });
+        }
 
-        let fjfh = int.member.id === id;
+        await int.deferReply({ flags: MessageFlags.Ephemeral });
 
-        if(!fjfh) return int.reply("No eres fjfh asi que no puedes usar este comando").then(m => setTimeout(() => m.delete(), 5000))
-
-        pidusage(process.pid, (err, stats) => {
-            if (err){
-                console.log('Error al obtener el usa de CPU:', err)
-                return int.reply({ content: "Error al mirar el uso de la CPU", flags: MessageFlags.Ephemeral})
+        pidusage(process.pid, async (err, stats) => {
+            if (err) {
+                console.error('Error al obtener uso de CPU:', err);
+                return int.editReply("Error al obtener estadísticas.");
             }
 
-            const memorialibre = os.freemem()/1024/1024;
-            const totalmemoria = os.totalmem()/1024/1024;
+            const totalMemory = os.totalmem() / 1024 / 1024;
+            const freeMemory = os.freemem() / 1024 / 1024;
+            const usedMemory = totalMemory - freeMemory;
+            const platform = os.platform();
+            const uptime = os.uptime() / 3600;
 
-            const memoriausada = totalmemoria - memorialibre
+            const embed = new EmbedBuilder()
+                .setTitle(`Rendimiento del Sistema`)
+                .addFields(
+                    { name: "CPU Uso", value: `${stats.cpu.toFixed(2)}%`, inline: true },
+                    { name: "RAM", value: `${usedMemory.toFixed(0)}MB / ${totalMemory.toFixed(0)}MB`, inline: true },
+                    { name: "Plataforma", value: `${platform}`, inline: true },
+                    { name: "Uptime (Sistema)", value: `${uptime.toFixed(2)} hrs`, inline: true }
+                )
+                .setFooter({ text: "Monitor de Sistema" })
+                .setColor(0xFF0000);
 
-            const cpu = stats.cpu
-
-            const embed = new Discord.EmbedBuilder()
-            .setTitle(`Rendimiento de la Raspberry Pi 5`)
-            .setDescription(`Memoria RAM: **${memoriausada.toLocaleString('es-ES', { useGrouping: true })}MB/${totalmemoria.toLocaleString('es-ES', { useGrouping: true })}MB**\n\nUso de la CPU: ${(cpu).toFixed(2)}%`)
-            .setFooter({text: "Creado por fjfh"})
-            .setColor(0xFF0000)
-            int.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
-        })
+            await int.editReply({ embeds: [embed] });
+        });
     }
-}
+};

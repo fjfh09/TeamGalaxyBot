@@ -1,69 +1,47 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { ActionRowBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-//const db = require('megadb');
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
+import { dbService } from "../../Services/DatabaseService.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("registrar_deudor")
-    .setDescription("Registra a un usuario que te debe dinero")
-    .addStringOption(option =>
-        option.setName("nombre_deudor")
-        .setDescription("Pon el nombre de la persona que te debe dinero")
-        .setRequired(true)
-    )
-    .addNumberOption(option =>
-        option.setName("dinero")
-        .setDescription("Pon cuanto dinero te debe")
-        .setRequired(true)
-    ),
+        .setName("registrar_deudor")
+        .setDescription("Registra una deuda pendiente")
+        .addStringOption(option =>
+            option.setName("nombre")
+                .setDescription("Nombre de la persona que te debe dinero")
+                .setRequired(true)
+        )
+        .addIntegerOption(option =>
+            option.setName("cantidad")
+                .setDescription("Cantidad que te debe")
+                .setRequired(true)
+                .setMinValue(1)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-//         let user_id = int.member.id;
-// const cuentauser = new db.crearDB(`${user_id}`, 'economia');
+        const nombre = int.options.getString("nombre");
+        const cantidad = int.options.getInteger("cantidad");
+        const ownerId = int.user.id;
 
-// const deudor_nombre = int.options.getString("nombre_deudor");
-// const deudor_debe = int.options.getNumber("dinero");
+        try {
+            await dbService.cartera.run(
+                "INSERT INTO deudores (owner_id, debtor_name, amount) VALUES (?, ?, ?)",
+                [ownerId, nombre, cantidad]
+            );
 
-// if (!cuentauser.tiene(`${user_id}`)) {
-//     const embed = new Discord.EmbedBuilder()
-//         .setThumbnail(int.guild.iconURL({ dynamic: true }))
-//         .setAuthor({name: 'Team Galaxy'})
-//         .setColor(0xFFFB00)
-//         .setTitle('No estás registrado en la base de datos')
-//         .setDescription('Para crearte un perfil utiliza el comando /crear_cuenta')
-//         .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-//     int.reply({ embeds: [embed] });
-// } else {
-//     let deudores = cuentauser.obtener(`deudores`) || {};
+            const embed = new EmbedBuilder()
+                .setTitle("🧾 Deuda Registrada")
+                .setDescription(`Se ha registrado que **${nombre}** te debe **${cantidad}** monedas.`)
+                .setColor("Green")
+                .setTimestamp();
 
-//     if (deudores.hasOwnProperty(deudor_nombre)) {
-//         const embedExistente = new Discord.EmbedBuilder()
-//             .setThumbnail(int.guild.iconURL({ dynamic: true }))
-//             .setAuthor({name: 'Team Galaxy'})
-//             .setColor(0xFFFB00)
-//             .setTitle('Deudor ya registrado')
-//             .setDescription(`El deudor ${deudor_nombre} ya está registrado en la base de datos.`)
-//             .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-//         int.reply({ embeds: [embedExistente] });
-//     } else {
-//         deudores[deudor_nombre] = deudor_debe;
-//         cuentauser.establecer(`deudores`, deudores);
+            await int.editReply({ embeds: [embed] });
 
-//         const embedNuevo = new Discord.EmbedBuilder()
-//             .setThumbnail(int.guild.iconURL({ dynamic: true }))
-//             .setAuthor({name: 'Team Galaxy'})
-//             .setColor(0xFFFB00)
-//             .setTitle(`Se ha registrado el deudor con nombre ${deudor_nombre}`)
-//             .setDescription(`Te debe ${deudor_debe}€`)
-//             .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-//         int.reply({ embeds: [embedNuevo] });
-//     }
-// }
-
-
-        
-
+        } catch (error) {
+            console.error(error);
+            await int.editReply("❌ Error al registrar la deuda.");
+        }
     }
-}
+};

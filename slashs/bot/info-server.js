@@ -1,76 +1,49 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { PresenceUpdateStatus } = require('discord.js');
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("servidor")
-    .setDescription("Te doy la información del server"),
+        .setName("servidor")
+        .setDescription("Muestra información detallada del servidor"),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-      try {
+        try {
+            const guild = int.guild;
+            const owner = await guild.fetchOwner();
+            // Fetching members with presences might be heavy or restricted without intents, but standard count is fine
+            // If the bot has the intent and it's a small server, this works. For large servers, it's expensive.
+            // We'll trust the existing logic but wrap it safely.
+            
+            const members = await guild.members.fetch();
+            const online = members.filter(m => !m.user.bot && ['online', 'idle', 'dnd'].includes(m.presence?.status)).size;
+            const bots = members.filter(m => m.user.bot).size;
+            const humans = guild.memberCount - bots; // Approximation or use filtered size
 
-      const fetchedMembers = await int.guild.members.fetch({ withPresences: true });
-      const presence = fetchedMembers.filter(member => ['online', 'idle', 'dnd'].includes(member.presence?.status));
+            const embed = new EmbedBuilder()
+                .setAuthor({ name: 'Team Galaxy', iconURL: guild.iconURL() })
+                .setColor("Purple")
+                .setThumbnail(guild.iconURL({ dynamic: true }))
+                .setTitle(`Información del Servidor: ${guild.name}`)
+                .addFields(
+                    { name: "👑 Propietario", value: `<@${guild.ownerId}>`, inline: true },
+                    { name: "👥 Miembros", value: `Total: ${guild.memberCount}\nHumanos: ${humans}\nBots: ${bots}`, inline: true },
+                    { name: "🟢 En Línea (aprox)", value: `${online}`, inline: true },
+                    { name: "📅 Creación", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`, inline: true },
+                    { name: "🔢 Roles", value: `${guild.roles.cache.size}`, inline: true },
+                    { name: "✅ Verificación", value: guild.verified ? 'Verificado' : 'No verificado', inline: true },
+                    { name: "🔮 Mejoras (Boosts)", value: `${guild.premiumSubscriptionCount} (Nivel ${guild.premiumTier})`, inline: true },
+                    { name: "😊 Emojis", value: `${guild.emojis.cache.size}`, inline: true }
+                )
+                .setFooter({ text: `Solicitado por ${int.user.username}` })
+                .setTimestamp();
 
-        const embed = new Discord.EmbedBuilder()
-        .setAuthor({name: 'Team Galaxy'})
-      .setColor("Purple")
-      .setThumbnail(int.guild.iconURL({ dynamic: true }))
-      .setTitle(`${int.guild.name} información del servidor`)
-      .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-      .addFields(
-        {
-          name: "🌍 Propietario: ",
-          value: `<@${int.guild.ownerId}>`,
-          inline: true
-        },
-        {
-          name: "👥 Miembros: ",
-          value: `Hay ${int.guild.memberCount} miembros en el servidor!`,
-          inline: true
-        },
-        {
-          name: "🟢 Miembros en línea: ",
-          value: `Hay ${presence.size} usuarios en línea!`,
-          inline: true
-        },
-        {
-          name: "🤖 BOTS: ",
-          value: `Hay ${int.guild.members.cache.filter(m => m.user.bot).size} bots en el servidor!`,
-          inline: true
-        },
-        {
-          name: "📅 Fecha de creación: ",
-          value: int.guild.createdAt.toLocaleDateString("es"),
-          inline: true
-        },
-        {
-          name: "🔢 Número de roles: ",
-          value: `Hay ${int.guild.roles.cache.size} roles en el servidor.`,
-          inline: true,
-        },
-        {
-          name: `✅ Verificado: `,
-          value: int.guild.verified ? 'El servidor esta verficado.' : `El servidor no esta verficado.`,
-          inline: true
-        },
-        {
-          name: '🔮 Boosters: ',
-          value: int.guild.premiumSubscriptionCount >= 1 ? `Hay ${int.guild.premiumSubscriptionCount} de usuarios mejorando el servidor` : `No hay nadie mejorando el servidor`,
-          inline: true
-        },
-        {
-          name: "🤨 Emojis: ",
-          value: int.guild.emojis.cache.size >= 1 ? `Hay ${int.guild.emojis.cache.size} emojis!` : 'No hay emojis',
-          inline: true
+            await int.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error(error);
+            await int.editReply("❌ Error al obtener información del servidor.");
         }
-      )
-        await int.reply({ embeds: [embed]})
-
-    } catch (e){
-      await int.reply("Error al ver los usuarios en linea")
     }
-    }
-}
+};

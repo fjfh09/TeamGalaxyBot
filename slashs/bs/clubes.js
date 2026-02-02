@@ -1,9 +1,9 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder } = require("discord.js");
-const sqlite3 = require("sqlite3").verbose();
-const db_bot = new sqlite3.Database("./BD/db_bot.sqlite");
-const { MessageFlags } = require('discord.js');
-module.exports = {
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, MessageFlags } from "discord.js";
+import { dbService } from "../../Services/DatabaseService.js";
+import { brawlService } from "../../Services/BrawlStarsService.js";
+
+export default {
     data: new SlashCommandBuilder()
         .setName("clubes")
         .setDescription("Te digo la info de los clubes de Mystic Galaxy")
@@ -24,16 +24,25 @@ module.exports = {
 
     async run(client, int) {
         try {
-            const { Client: BrawlClient } = require("brawl-api-wrapper");
-            const { tokenb, I, II, III, IV, V, VI, VII } = require("../../Id,typ.json");
-            const clienta = new BrawlClient(tokenb);
+            await int.deferReply();
+
+            const I = process.env.TAG_I;
+            const II = process.env.TAG_II;
+            const III = process.env.TAG_III;
+            const IV = process.env.TAG_IV;
+            const V = process.env.TAG_V;
+            const VI = process.env.TAG_VI;
+            const VII = process.env.TAG_VII;
 
             const clubelegido = int.options.getString("club");
             const tags = { MysticGalaxy: I, MysticGalaxyII: II, MysticGalaxyIII: III, MysticGalaxyIV: IV, MysticGalaxyV: V, MysticGalaxyVI: VI, MysticGalaxyVII: VII };
             const tagclub = tags[clubelegido];
 
-            const ranking = await clienta.getRankingOfClubs("es");
-            const club = await clienta.getClub(tagclub);
+            const [ranking, club] = await Promise.all([
+                brawlService.getRankingOfClubs("es"),
+                brawlService.getClub(tagclub)
+            ]);
+
             let pos = ranking.findIndex(rank => rank.tag === tagclub);
             if (pos === -1) pos = "Sin Top";
 
@@ -58,21 +67,12 @@ module.exports = {
                 return clubTypeNames[clubType] || clubType;
             }
 
-            function getUserFromDB(tag) {
-                return new Promise((resolve, reject) => {
-                    db_bot.get(`SELECT * FROM usuariosbrawl WHERE tag = ?`, [tag], (err, row) => {
-                        if (err) return reject(err);
-                        resolve(row);
-                    });
-                });
-            }
-
             let presidente = null;
 
             const members = await Promise.all(
                 club.members.map(async (member, index) => {
                     try {
-                        const filas = await getUserFromDB(member.tag);
+                        const filas = await dbService.bot.get(`SELECT * FROM usuariosbrawl WHERE tag = ?`, [member.tag]);
 
                         let emojir;
                         if (member.role === "president") {
@@ -142,20 +142,16 @@ module.exports = {
                 return new ActionRowBuilder().addComponents(menu);
             });
 
-            await int.reply({ embeds: [embed], components: selectMenus });
+            await int.editReply({ embeds: [embed], components: selectMenus });
 
         } catch (err) {
-            switch (err.status) {
-                case 503:
-                    return int.reply({ content: "La API de Brawl Stars está en mantenimiento", flags: MessageFlags.Ephemeral });
-                case 404:
-                    return int.reply({ content: "Club no encontrado", flags: MessageFlags.Ephemeral });
-                case 500:
-                    return int.reply({ content: "Error inesperado", flags: MessageFlags.Ephemeral });
-                default:
-                    console.log(err);
-                    return int.reply({ content: "Ocurrió un error inesperado", flags: MessageFlags.Ephemeral });
-            }
+            console.error(err);
+             const errorMessage = { content: "Ocurrió un error inesperado al obtener datos del club.", flags: MessageFlags.Ephemeral };
+             if (int.deferred || int.replied) {
+                 await int.followUp(errorMessage);
+             } else {
+                 await int.reply(errorMessage);
+             }
         }
     }
 };

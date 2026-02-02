@@ -1,28 +1,37 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("8ball")
-    .setDescription("Puedes preguntarme lo que quieras")
-    .addStringOption(option =>
-        option.setName("pregunta")
-        .setDescription("Pon la pregunta")
-        .setRequired(true)
-    ),
+        .setName("8ball")
+        .setDescription("Haz una pregunta de sí o no")
+        .addStringOption(option =>
+            option.setName("pregunta")
+                .setDescription("Tu pregunta")
+                .setRequired(true)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-        let pregunta = int.options.getString("pregunta")
+        const pregunta = int.options.getString("pregunta");
+        const respuestas = [
+            "Sí.", "No.", "Probablemente sí.", "Probablemente no.", "Definitivamente.", 
+            "¡Por supuesto!", "Ni lo sueñes.", "No cuentes con ello.", "Pregunta de nuevo tonto.", 
+            "Mis fuentes dicen que no.", "Las señales apuntan a que sí."
+        ];
+        
+        const respuesta = respuestas[Math.floor(Math.random() * respuestas.length)];
 
-        let respuestas = ["Si.", "No.", "Probablemente no", "Probablemente si", "Puedes confiar en eso", "Por supuesto que no!", "Claro que si", "Tu que crees", "Piensatelo dos veces", "No estoy seguro"]
-        let random = respuestas [Math.floor(Math.random() * respuestas.length)];
+        const embed = new EmbedBuilder()
+            .setColor("DarkBlue")
+            .setTitle("🎱 La Bola Mágica dice...")
+            .addFields(
+                { name: "❓ Pregunta", value: pregunta },
+                { name: "💬 Respuesta", value: respuesta }
+            )
+            .setFooter({ text: `Solicitado por ${int.user.username}` });
 
-        const embed = new Discord.EmbedBuilder()
-        .setColor("DarkBlue")
-        .setTitle("8ball")
-        .setDescription(`Tu pregunta:\n**${pregunta}**\n\nMi respuesta es:\n**${random}**`)
-        .setFooter({ text: `Creado por fjfh`})
-        int.reply({ embeds: [embed]})
+        await int.editReply({ embeds: [embed] });
     }
-}
+};

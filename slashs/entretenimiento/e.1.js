@@ -1,58 +1,61 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { ButtonStyle } = require('discord.js');
-let cooldown = new Set();
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from "discord.js";
 
-module.exports = {
+const cooldowns = new Set();
+
+export default {
     data: new SlashCommandBuilder()
-    .setName("e_1")
-    .setDescription("Adivina que es"),
+        .setName("e_1")
+        .setDescription("Un pequeño secreto..."),
 
-    async run(client, int){
+    async run(client, int) {
+        if (cooldowns.has(int.user.id)) {
+            return int.reply({ content: "⏳ Debes esperar 20 segundos para volver a usar este secreto.", ephemeral: true });
+        }
 
-        if (cooldown.has(int.member.id)) {
-            const embed = new Discord.EmbedBuilder()
-              .setTitle("Tienes que esperar 20s para ejecutar otra vez este comando")
-              .setColor("Red")
-              .setFooter({ text: `Creado por fjfh` })
-              .setTimestamp()
-      
-            return int.reply({ embeds: [embed] })
-          } cooldown.add(int.member.id);
-      
-          setTimeout(() => {
-            cooldown.delete(int.user.id);
-          }, 20010);
+        cooldowns.add(int.user.id);
+        setTimeout(() => cooldowns.delete(int.user.id), 20000);
 
-          const row = new Discord.ActionRowBuilder()
-            .addComponents(
-                new Discord.ButtonBuilder()
-                .setCustomId("b1")
-                .setLabel("Me cago en tu puta madre")
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("b1_secret")
+                .setLabel("¡NO PULSES ESTE BOTÓN!")
                 .setEmoji("🤬")
                 .setStyle(ButtonStyle.Danger)
-            )
-        
-        const embed = new Discord.EmbedBuilder()
-        .setTitle("Se tenia que decir:")
-        .setColor("Fuchsia")
-        .setFooter({text: "El botón dejará de funcionar en 20 segundos"})
+        );
 
-        const m = await int.reply({ embeds: [embed], components: [row], fetchReply: true })
-      
-        const ifilter = i => i.user.id === int.member.id;
-    
-        const collector = m.createMessageComponentCollector({ filter: ifilter, time: 20000 })
+        const embed = new EmbedBuilder()
+            .setTitle("⚠️ Advertencia")
+            .setDescription("Hay un botón abajo. No deberías pulsarlo.")
+            .setColor("Fuchsia")
+            .setFooter({ text: "Autodestrucción en 20 segundos..." });
+
+        const msg = await int.reply({ embeds: [embed], components: [row], fetchReply: true });
+
+        const collector = msg.createMessageComponentCollector({ 
+            componentType: ComponentType.Button, 
+            time: 20000,
+            filter: i => i.user.id === int.user.id 
+        });
 
         collector.on("collect", async (i) => {
-
-            if(i.customId === "b1"){
-                await i.deferUpdate()
-                const embeda = new Discord.EmbedBuilder()
-                .setTitle("y tu tambien eres una puta :joy::joy:")
-                .setColor("Red")
-                i.editReply({ embeds: [embeda], components: [], fetchReply: true }).then(m => setTimeout(() => m.delete(), 5000))
+            if (i.customId === "b1_secret") {
+                const jokeEmbed = new EmbedBuilder()
+                    .setTitle("😂😂😂")
+                    .setDescription("¡Te lo advertí! (Broma)")
+                    .setColor("Red");
+                
+                // Using deferUpdate to replace the message efficiently
+                await i.update({ embeds: [jokeEmbed], components: [] });
+                // Optional: delete after 5s
+                setTimeout(() => int.deleteReply().catch(() => {}), 5000);
             }
-        })
+        });
+
+        collector.on('end', (_, reason) => {
+            if (reason === 'time') {
+                int.editReply({ content: "El botón ha desaparecido.", components: [] }).catch(() => {});
+            }
+        });
     }
-}
+};

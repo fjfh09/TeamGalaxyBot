@@ -1,18 +1,23 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("Te doy mi ping"),
+        .setName("ping")
+        .setDescription("Muestra la latencia del bot"),
 
-    async run(client, int){
-        const embed = new Discord.EmbedBuilder()
-           .setTitle("Team Galaxy")
-           .setDescription(`Mi ping es de **${client.ws.ping}ms** 🏓`)
-           .setColor(0x0A69CF)
-           .setFooter({text: 'Creado por fjfh'})
-           .setTimestamp()
-        int.reply({ embeds: [embed]})
+    async run(client, int) {
+        await int.deferReply();
+        const start = Date.now();
+        
+        // Calculate DB latency (optional, requires async op, sticking to WS ping + roundtrip for now)
+        const embed = new EmbedBuilder()
+            .setColor(0x0A69CF)
+            .setTitle("🏓 Pong!")
+            .setDescription(`**Latencia Websocket:** ${client.ws.ping}ms\n**Respuesta API:** ${Date.now() - int.createdTimestamp}ms`)
+            .setFooter({ text: `Solicitado por ${int.user.username}` })
+            .setTimestamp();
+
+        await int.editReply({ embeds: [embed] });
     }
-}
+};

@@ -1,7 +1,7 @@
-const { ButtonStyle, ChannelType } = require('discord.js');
-const Discord = require('discord.js');
-const { MessageFlags } = require('discord.js');
-module.exports = {
+import { ButtonStyle, ChannelType } from 'discord.js';
+import Discord from 'discord.js';
+import { MessageFlags } from 'discord.js';
+export default {
   name: "interactionCreate",
   once: false,
   async execute(client, interaction) {

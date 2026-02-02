@@ -1,62 +1,49 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { ActionRowBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-//const db = require('megadb');
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
+import { dbService } from "../../Services/DatabaseService.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("lista_deudores")
-    .setDescription("Mira quien te debe dinero"),
+        .setName("lista_deudores")
+        .setDescription("Muestra la lista de personas que te deben dinero"),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
+        const ownerId = int.user.id;
 
-//         let user_id = int.member.id;
-//         const cuentauser = new db.crearDB(`${user_id}`, 'economia');
+        try {
+            const deudores = await dbService.cartera.all(
+                "SELECT * FROM deudores WHERE owner_id = ?",
+                [ownerId]
+            );
 
-// if (!cuentauser.tiene(`${user_id}`)) {
-//     const embed = new Discord.EmbedBuilder()
-//         .setThumbnail(int.guild.iconURL({ dynamic: true }))
-//         .setAuthor({name: 'Team Galaxy'})
-//         .setColor(0xFFFB00)
-//         .setTitle('No estás registrado en la base de datos')
-//         .setDescription('Para crearte un perfil utiliza el comando /crear_cuenta')
-//         .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-//     int.reply({ embeds: [embed] });
-// } else {
+            if (!deudores || deudores.length === 0) {
+                return int.editReply({ 
+                    embeds: [new EmbedBuilder()
+                        .setDescription("✅ **¡Nadie te debe dinero!** (O no has registrado a nadie)")
+                        .setColor("Green")
+                    ]
+                });
+            }
 
-//     let deudores = cuentauser.obtener(`deudores`) || {};
+            let description = deudores.map((d, index) => 
+                `**${index + 1}.** ${d.debtor_name}: **${d.amount}** 💰`
+            ).join("\n");
 
-//     if (Object.keys(deudores).length === 0) {
-//         const embedSinDeudores = new Discord.EmbedBuilder()
-//             .setThumbnail(int.guild.iconURL({ dynamic: true }))
-//             .setAuthor({name: 'Team Galaxy'})
-//             .setColor(0xFFFB00)
-//             .setTitle('No tienes deudores registrados')
-//             .setDescription('No tienes ninguna deuda registrada en la base de datos.')
-//             .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-//         int.reply({ embeds: [embedSinDeudores] });
+            const total = deudores.reduce((acc, curr) => acc + curr.amount, 0);
 
-//     } else {
+            const embed = new EmbedBuilder()
+                .setTitle("📋 Lista de Deudores")
+                .setDescription(description)
+                .addFields({ name: "Total Pendiente", value: `${total} 💰` })
+                .setColor("Yellow")
+                .setFooter({ text: "Usa /pagar_deuda para borrar una deuda" });
 
+            await int.editReply({ embeds: [embed] });
 
-//         let deudoresLista = '';
-//         for (const [deudor, cantidad] of Object.entries(deudores)) {
-//             deudoresLista += `- ${deudor}: ${cantidad}€\n`;
-//         }
-
-//         const embedDeudores = new Discord.EmbedBuilder()
-//             .setThumbnail(int.guild.iconURL({ dynamic: true }))
-//             .setAuthor({name: 'Team Galaxy'})
-//             .setColor(0xFFFB00)
-//             .setTitle('Lista de Deudores Registrados')
-//             .setDescription(deudoresLista)
-//             .setFooter({text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-//         int.reply({ embeds: [embedDeudores] });
-//         }
-//         }
-
-
-        
-
+        } catch (error) {
+            console.error(error);
+            await int.editReply("❌ Error al obtener la lista de deudores.");
+        }
     }
-}
+};

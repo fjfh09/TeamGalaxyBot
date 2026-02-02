@@ -1,8 +1,10 @@
-const Discord = require('discord.js');
-const sqlite3 = require('sqlite3').verbose();
+import sqlite3 from 'sqlite3';
+const { Database } = sqlite3.verbose();
+import Discord from 'discord.js';
+
 const db_webhooks = new sqlite3.Database("./BD/db_webhooks.sqlite");
 
-module.exports = {
+export default {
   name: "827528",
   alias: [],
   async execute(client, message, args) {

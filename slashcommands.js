@@ -1,31 +1,50 @@
-const fs = require("fs")
-const Discord = require("discord.js");
-const { REST } = require("@discordjs/rest")
-const { Routes } = require("discord-api-types/v9")
-let { clientId, token } = require("./Id,typ.json")
-const commands = []
-fs.readdirSync("./slashs/").forEach((dir) => {
-const slashcommandsFiles = fs.readdirSync(`./slashs/${dir}`).filter(file => file.endsWith(".js"))
+import "dotenv/config";
+import fs from "fs";
+import path from "path";
+import { REST } from "@discordjs/rest";
+import { Routes } from "discord-api-types/v9";
+import { pathToFileURL } from "url";
 
-for (const file of slashcommandsFiles){
-    const slash = require(`./slashs/${dir}/${file}`)
-    commands.push(slash.data.toJSON())
-}
-});
+const clientId = process.env.CLIENT_ID;
+const token = process.env.TOKEN;
+const commands = [];
 
-const rest = new REST({ version: "9" }).setToken(token)
+async function main() {
+    const slashDirs = fs.readdirSync("./slashs/");
+    
+    for (const dir of slashDirs) {
+        const dirPath = path.join(process.cwd(), "slashs", dir);
+        if (fs.statSync(dirPath).isDirectory()) {
+             const slashcommandsFiles = fs.readdirSync(dirPath).filter(file => file.endsWith(".js"));
+             for (const file of slashcommandsFiles) {
+                 try {
+                     const filePath = path.join(dirPath, file);
+                     const slashModule = await import(pathToFileURL(filePath).href);
+                     const slash = slashModule.default;
+                     if (slash?.data) {
+                        commands.push(slash.data.toJSON());
+                     }
+                 } catch (err) {
+                     console.error(`Error loading ${file}:`, err);
+                 }
+             }
+        }
+    }
 
-createSlash()
+    const rest = new REST({ version: "9" }).setToken(token);
 
-async function createSlash(){
-    try{
+    console.log("Started refreshing application (/) commands.");
+
+    try {
         await rest.put(
             Routes.applicationCommands(clientId), {
                 body: commands
             }
-        )
-        console.log("Comandos de barra agregados")
-    } catch(e) {
-        console.error(e)
+        );
+        console.log("Comandos de barra agregados correctamente");
+    } catch (e) {
+        console.error(e);
     }
 }
+
+main();

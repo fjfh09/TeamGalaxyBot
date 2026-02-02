@@ -1,7 +1,7 @@
-const Discord = require('discord.js')
-const { ButtonStyle } = require('discord.js');
+import Discord from 'discord.js'
+import { ButtonStyle } from 'discord.js';
 
-module.exports = {
+export default {
     name: "926468",
     alias: [],
 

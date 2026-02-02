@@ -1,9 +1,9 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const Discord = require("discord.js");
-const { ButtonStyle } = require('discord.js');
-const math = require("mathjs");
+import { SlashCommandBuilder } from "@discordjs/builders";
+import Discord from "discord.js";
+import { ButtonStyle } from 'discord.js';
+import * as math from "mathjs";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("calculadora")
         .setDescription("Usa la calculadora"),

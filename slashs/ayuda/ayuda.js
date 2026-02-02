@@ -1,9 +1,9 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders"
+import Discord from "discord.js"
 let cooldown = new Set();
-const { ComponentType } = require('discord.js');
+import { ComponentType } from 'discord.js';
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
         .setName("ayuda")
         .setDescription("Te doy mis comandos"),

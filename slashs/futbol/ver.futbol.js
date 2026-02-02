@@ -1,27 +1,26 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { ButtonStyle } = require('discord.js');
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("ver_futbol")
-    .setDescription("Podrás ver el futbol de la Liga Santander"),
+        .setName("ver_futbol")
+        .setDescription("Enlace para ver partidos de fútbol"),
 
-    async run(client, int){
+    async run(client, int) {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setLabel("Ver Fútbol")
+                .setURL("https://www.rojadirectatvenvivo.com/")
+                .setStyle(ButtonStyle.Link)
+        );
 
-        const row = new Discord.ActionRowBuilder()
-            .addComponents(
-                new Discord.ButtonBuilder()
-                .setLabel("Click Aquí")
-               .setURL("https://www.rojadirectatvenvivo.com/")
-               .setStyle(ButtonStyle.Link)
-              )   
-        const embed = new Discord.EmbedBuilder()
-        .setTitle("Team Galaxy")
-        .setDescription(`Podrás ver los partidos de futbol gratis\n**¿Quieres ver el futbol?**\n**Pulsa el botón**`)
-        .setColor(0x0A69CF)
-        .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-        .setTimestamp()   
-        int.reply({ embeds: [embed], components: [row] })
+        const embed = new EmbedBuilder()
+            .setTitle("⚽ Fútbol en Vivo")
+            .setDescription(`Haz clic en el botón para ver partidos gratis.`)
+            .setColor(0x0A69CF)
+            .setFooter({ text: `Solicitado por ${int.user.username}` })
+            .setTimestamp();
+
+        await int.reply({ embeds: [embed], components: [row] });
     }
-}
+};

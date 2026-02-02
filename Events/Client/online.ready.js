@@ -1,8 +1,8 @@
-const Discord = require("discord.js");
-const { ChannelType } = require("discord.js");
-const cron = require('node-cron');
+import Discord from "discord.js";
+import { ChannelType } from "discord.js";
+import cron from 'node-cron';
 
-module.exports = {
+export default {
     name: "clientReady",
     once: false,
     async execute(client) {

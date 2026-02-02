@@ -1,38 +1,39 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const { PermissionsBitField } = require('discord.js');
-const { MessageFlags } = require('discord.js');
-module.exports = {
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, MessageFlags, PermissionsBitField } from "discord.js";
+
+export default {
     data: new SlashCommandBuilder()
-    .setName("embed")
-    .setDescription("Puedes crear un embed")
-    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
-    .addStringOption(option =>
-        option.setName("titulo")
-        .setDescription("Especifica el titulo del embed")
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName("descripcion")
-        .setDescription("Especifica la descripcion del embed")
-        .setRequired(true)
-    ),
+        .setName("embed")
+        .setDescription("Crea y envía un embed al canal actual")
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
+        .addStringOption(option =>
+            option.setName("titulo")
+                .setDescription("Título del embed")
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName("descripcion")
+                .setDescription("Descripción del embed")
+                .setRequired(true)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        const titulo = int.options.getString("titulo");
+        const descripcion = int.options.getString("descripcion");
 
-        let creador = int.user.tag;
+        const embed = new EmbedBuilder()
+            .setTitle(titulo)
+            .setDescription(descripcion)
+            .setThumbnail(int.guild.iconURL({ dynamic: true }))
+            .setColor("Blue")
+            .setFooter({ text: `Creado por ${int.user.tag}` })
+            .setTimestamp();
 
-        const titulo = int.options.getString("titulo")
-        const descripcion = int.options.getString("descripcion")
-
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(`${titulo}`)
-        .setDescription(`${descripcion}`)
-        .setThumbnail(int.guild.iconURL({ dynamic: true }))
-        .setColor("Blue")
-        .setFooter({ text: `Embed creado por ${creador} | Creado por fjfh`})
-        .setTimestamp()
-        int.channel.send({ embeds: [embed]})
-        int.reply({ content: "Enviado", flags: MessageFlags.Ephemeral })
+        try {
+            await int.channel.send({ embeds: [embed] });
+            await int.reply({ content: "✅ Embed enviado correctamente.", flags: MessageFlags.Ephemeral });
+        } catch (e) {
+            await int.reply({ content: "❌ Error al enviar el embed (¿tengo permisos?).", flags: MessageFlags.Ephemeral });
+        }
     }
-}
+};

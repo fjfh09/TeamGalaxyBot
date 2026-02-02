@@ -1,85 +1,53 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("ppt")
-    .setDescription("Puedes jugar a Piedra, Papel o Tijeras")
-    .addStringOption(option =>
-        option.setName("eleccion")
-        .setDescription("Escoje tu eleccion")
-        .setRequired(true)
-        .addChoices(
-            {
-                name: "Piedra",
-                value: "Piedra",
-              },
-              {
-                name: "Papel",
-                value: "Papel",
-              },
-              {
-                name: "Tijeras",
-                value: "Tijeras",
-              },
-        )
-    ),
+        .setName("ppt")
+        .setDescription("Juega Piedra, Papel o Tijeras contra el bot")
+        .addStringOption(option =>
+            option.setName("eleccion")
+                .setDescription("Tu elección")
+                .setRequired(true)
+                .addChoices(
+                    { name: "Piedra 👊", value: "Piedra" },
+                    { name: "Papel 📃", value: "Papel" },
+                    { name: "Tijeras ✂️", value: "Tijeras" }
+                )
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
 
-        let user = int.member;
+        const userChoice = int.options.getString("eleccion");
+        const options = ["Piedra", "Papel", "Tijeras"];
+        const botChoice = options[Math.floor(Math.random() * options.length)];
 
-        let eleccion = int.options.getString("eleccion")
+        const emojis = { "Piedra": "👊", "Papel": "📃", "Tijeras": "✂️" };
+        
+        let result;
+        if (userChoice === botChoice) {
+            result = "🔆 ¡EMPATE! 🔆";
+        } else if (
+            (userChoice === "Piedra" && botChoice === "Tijeras") ||
+            (userChoice === "Papel" && botChoice === "Piedra") ||
+            (userChoice === "Tijeras" && botChoice === "Papel")
+        ) {
+            result = "✅ ¡GANASTE! ✅";
+        } else {
+            result = "❌ ¡PERDISTE! ❌";
+        }
 
-        let opciones = ["Piedra", "Papel", "Tijeras"];
-        let respuesta = opciones[Math.floor(Math.random()*(opciones.length))];
+        const embed = new EmbedBuilder()
+            .setColor("DarkBlue")
+            .setTitle(result)
+            .addFields(
+                { name: "Tu elección", value: `${userChoice} ${emojis[userChoice]}`, inline: true },
+                { name: "Mi elección", value: `${botChoice} ${emojis[botChoice]}`, inline: true }
+            )
+            .setFooter({ text: `${int.user.username} vs Bot` })
+            .setTimestamp();
 
-        var vyd = null;
-    if (eleccion == "Papel" && respuesta == "Papel"){
-      vyd = "🔅 ¡EMPATASTE! 🔅"
-    }if (eleccion == "Piedra"&& respuesta == "Piedra"){
-      vyd = "🔅 ¡EMPATASTE! 🔅"
-    }if (eleccion == "Tijeras" && respuesta == "Tijeras"){
-      vyd = "🔅 ¡EMPATASTE! 🔅"
-    }if (eleccion == "Papel" && respuesta == "Piedra"){
-      vyd = "✅ ¡GANASTE! ✅"
-    }if (eleccion == "Papel" && respuesta == "Tijeras"){
-      vyd = "❌ ¡PERDISTE! ❌"
-    }if (eleccion == "Piedra" && respuesta == "Papel"){
-      vyd = "❌ ¡PERDISTE! ❌"
-    }if (eleccion == "Piedra" && respuesta == "Tijeras"){
-      vyd = "✅ ¡GANASTE! ✅"
-    }if (eleccion == "Tijeras" && respuesta == "Papel"){
-      vyd = "✅ ¡GANASTE! ✅"
-    }if (eleccion == "Tijeras" && respuesta == "Piedra"){
-      vyd = "❌ ¡PERDISTE! ❌"
-    };
-
-    var uelec = null;
-    if (eleccion == "Piedra") {
-        uelec = `Piedra 👊`
-    }if (eleccion == "Papel"){
-        uelec = "Papel 📃"
-    }if (eleccion == "Tijeras"){
-      uelec = "Tijeras ✂️"
-    };
-
-    var belec = null;
-    if (respuesta == "Piedra") {
-        belec = `Piedra 👊`
-    }if (respuesta == "Papel"){
-        belec = "Papel 📃"
-    }if (respuesta == "Tijeras"){
-      belec = "Tijeras ✂️"
-    };
-
-        const embed = new Discord.EmbedBuilder()
-        .setColor("DarkBlue")
-        .setThumbnail(user.user.displayAvatarURL({ dynamic: true }))
-        .setTitle(`${vyd}`)
-        .setDescription(`Has elegido: **${uelec}**\nTeam Galaxy ha elegido: **${belec}**`)
-        .setFooter({ text: `${user.user.username} contra Team Galaxy bot | Creado por fjfh`})
-        .setTimestamp()
-        int.reply({ embeds: [embed]})
+        await int.editReply({ embeds: [embed] });
     }
-}
+};

@@ -1,88 +1,59 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("usuario")
-    .setDescription("Te doy tu información")
-    .addUserOption(option =>
-        option.setName("usuario")
-        .setDescription("Selecciona un usuario que quieres ver su perfil")
-        .setRequired(false)
-    ),
+        .setName("usuario")
+        .setDescription("Muestra información detallada de un usuario")
+        .addUserOption(option =>
+            option.setName("usuario")
+                .setDescription("Usuario a consultar (opcional)")
+                .setRequired(false)
+        ),
 
-    async run(client, int){
+    async run(client, int) {
+        await int.deferReply();
+        const member = int.options.getMember('usuario') || int.member;
+        const user = member.user;
 
-        let user = int.options.getMember('usuario') || int.member
-
-    let status;
-    switch (user.presence?.status) {
-      case "online":
-        status = "🟢 En línea";
-        break;
-      case "dnd":
-        status = "🔴 No molestar";
-        break;
-      case "idle":
-        status = "🟠 Ausente";
-        break;
-      default:
-        status = "⚪️ Desconectado"
-    }
-
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(`Información de ${user.user.username}.`)
-        .setAuthor({ name: 'Team Galaxy'})
-        .setColor(0x008BFF)
-        .setThumbnail(int.member.user.displayAvatarURL({ dynamic: true }))
-        .setFooter({ text: 'Creado por fjfh | Solicitado por: ' + int.member.displayName})
-        .addFields(
-        {
-          name: "🌍 Nombre: ",
-          value: user.user.username,
-          inline: true
-        },
-        {
-          name: "#️⃣ Hastag: ",
-          value: `#${user.user.discriminator}`,
-          inline: true
-        },
-        {
-          name: "🆔 ID: ",
-          value: user.user.id,
-          inline: true
-        },
-        {
-          name: "🔘 Estado: ",
-          value: status,
-          inline: true
-        },
-        {
-          name: "🎮 Actividad: ",
-          value: user.presence?.activities[0] ? user.presence?.activities[0].name : `El usuario no esta jugando a nada!`,
-          inline: true
-        },
-        {
-          name: '👤 Avatar: ',
-          value: `[Click aquí](${user.user.displayAvatarURL()})`,
-          inline: true
-        },
-        {
-          name: '📅 Fecha de creación: ',
-          value: user.user.createdAt.toLocaleDateString("es"),
-          inline: true
-        },
-        {
-          name: '📆 Fecha de unión: ',
-          value: user.joinedAt.toLocaleDateString("es"),
-          inline: true
-        },
-        {
-          name: '🔮 Roles del usuario: ',
-          value: user.roles.cache.map(role => role.toString()).join(" ,"),
-          inline: false
+        // Status logic
+        let status;
+        switch (member.presence?.status) {
+            case "online": status = "🟢 En línea"; break;
+            case "dnd": status = "🔴 No molestar"; break;
+            case "idle": status = "🟠 Ausente"; break;
+            default: status = "⚪️ Desconectado";
         }
-      );
-        int.reply({ embeds: [embed]})
+
+        // Roles logic (truncate if too many)
+        const roles = member.roles.cache
+            .filter(r => r.name !== '@everyone')
+            .sort((a, b) => b.position - a.position)
+            .map(r => r.toString());
+        
+        let rolesString = roles.join(", ");
+        if (rolesString.length > 1000) {
+            rolesString = roles.slice(0, 20).join(", ") + `... y ${roles.length - 20} más.`;
+        }
+        if (roles.length === 0) rolesString = "Sin roles adicionales.";
+
+        const embed = new EmbedBuilder()
+            .setTitle(`Información de ${user.username}`)
+            .setAuthor({ name: 'Team Galaxy', iconURL: int.guild.iconURL() })
+            .setColor(member.displayHexColor !== '#000000' ? member.displayHexColor : 0x008BFF)
+            .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+            .addFields(
+                { name: "👤 Usuario", value: `<@${user.id}>`, inline: true },
+                { name: "🆔 ID", value: user.id, inline: true },
+                { name: "🔘 Estado", value: status, inline: true },
+                { name: "📅 Creado", value: `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`, inline: true },
+                { name: "📆 Unido", value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`, inline: true },
+                { name: "🎮 Actividad", value: member.presence?.activities[0] ? member.presence.activities[0].name : "Ninguna", inline: true },
+                { name: `🔮 Roles [${roles.length}]`, value: rolesString, inline: false }
+            )
+            .setFooter({ text: `Solicitado por ${int.user.username}` })
+            .setTimestamp();
+
+        await int.editReply({ embeds: [embed] });
     }
-}
+};

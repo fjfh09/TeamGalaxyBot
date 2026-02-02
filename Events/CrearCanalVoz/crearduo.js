@@ -1,7 +1,7 @@
-const { PermissionsBitField } = require('discord.js');
-const { ChannelType } = require("discord.js");
+import { PermissionsBitField } from 'discord.js';
+import { ChannelType } from "discord.js";
 
-module.exports = {
+export default {
     name: "voiceStateUpdate",
     once: false,
     async execute(client, oldState, newState) {

@@ -1,8 +1,16 @@
-const Discord = require("discord.js");
-const cron = require('node-cron');
-const sqlite3 = require('sqlite3').verbose();
-const db_bot = new sqlite3.Database("./BD/db_bot.sqlite");
-const { tokenb, I, II, III, IV, V, VI, VII } = require("../../Id,typ.json")
+import sqlite3 from 'sqlite3';
+const { Database } = sqlite3.verbose();
+import Discord from "discord.js";
+import cron from 'node-cron';
+
+import { Client } from 'brawl-api-wrapper';
+import fs from 'fs';
+import path from 'path';
+
+const db_bot = new Database("./BD/db_bot.sqlite");
+const tokenb = process.env.TOKEN_B;
+
+const rolBrawlPath = path.join(process.cwd(), "Brawl", "rolbrawl.json");
 const { rolpresi1, rolvice1, rolvete1, rol1,
     rolpresi2, rolvice2, rolvete2, rol2,
     rolpresi3, rolvice3, rolvete3, rol3,
@@ -10,14 +18,14 @@ const { rolpresi1, rolvice1, rolvete1, rol1,
     rolpresi5, rolvice5, rolvete5, rol5,
     rolpresi6, rolvice6, rolvete6, rol6,
     rolpresi7, rolvice7, rolvete7, rol7,
-    rolcarnal, rolbrawl, rolsinclub } = require("../../Brawl/rolbrawl.json")
+    rolcarnal, rolbrawl, rolsinclub } = JSON.parse(fs.readFileSync(rolBrawlPath, "utf-8"));
 
 
-module.exports = {
+export default {
     name: "clientReady",
     once: true,
     async execute(client) {
-        const { Client } = require('brawl-api-wrapper');
+
         const clienta = new Client(tokenb);
 
         async function compararClubes() {

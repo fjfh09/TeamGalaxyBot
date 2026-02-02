@@ -1,8 +1,8 @@
-const Discord = require("discord.js");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { geminiAPIKey } = require("../../Id,typ.json")
+import Discord from "discord.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const geminiAPIKey = process.env.GEMINI_API_KEY;
 
-module.exports = {
+export default {
     name: "messageCreate",
     once: false,
     async execute(client, message) {

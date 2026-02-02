@@ -1,31 +1,35 @@
-const { SlashCommandBuilder } = require("@discordjs/builders")
-const Discord = require("discord.js")
-const axios = require("axios");
+import { SlashCommandBuilder } from "@discordjs/builders";
+import { EmbedBuilder, MessageFlags } from "discord.js";
+import axios from "axios";
 
-module.exports = {
+export default {
     data: new SlashCommandBuilder()
-    .setName("ip")
-    .setDescription("Obtienes la ip del bot"),
+        .setName("ip")
+        .setDescription("Obtienes la ip del bot (Admin Only)"),
 
-    async run(client, int){
-        const id = "739203308991807518";
-
-        let fjfh = int.member.id === id
-
-        if(!fjfh) return int.reply("No eres fjfh asi que no puedes usar este comando").then(m => setTimeout(() => m.delete(), 5000))
-
-        async function obtenerIpPublica() {
-        const respuesta = await axios.get(`https://api.ipify.org?format=json`);
-        return respuesta.data.ip;
+    async run(client, int) {
+        // ID Restriction Check
+        if (int.user.id !== "739203308991807518") {
+            return int.reply({ content: "No tienes permisos para usar este comando.", flags: MessageFlags.Ephemeral });
         }
 
-        const IP = await obtenerIpPublica();
+        await int.deferReply({ flags: MessageFlags.Ephemeral });
 
-        const embed = new Discord.EmbedBuilder()
-        .setTitle(`La ip es:`)
-        .setDescription(`${IP}`)
-        .setFooter({text: "Creado por fjfh"})
-        .setColor(0xFF0000)
-        int.reply({ embeds: [embed] }).then(m => setTimeout(() => m.delete(), 5000))
+        try {
+            const response = await axios.get(`https://api.ipify.org?format=json`);
+            const ip = response.data.ip;
+
+            const embed = new EmbedBuilder()
+                .setTitle(`Dirección IP Pública`)
+                .setDescription(`\`${ip}\``)
+                .setFooter({ text: "Información Confidencial" })
+                .setColor(0xFF0000);
+
+            await int.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error(error);
+            await int.editReply("Error al obtener la IP.");
+        }
     }
-}
+};

@@ -1,12 +1,15 @@
-const Discord = require('discord.js')
+import Discord from 'discord.js'
+import fs from "fs";
 
-module.exports = {
+export default {
     name: "version",
     alias: [],
 
     execute(client,message,args){
 
-        let {version} = require("../package.json")
+
+        const packageJson = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url)));
+        let { version } = packageJson;
             const embed = new Discord.EmbedBuilder()
             .setAuthor({ name: 'Team Galaxy'})
             .setColor(0xFFFB00)
