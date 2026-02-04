@@ -9,6 +9,13 @@ import path from 'path';
 
 const db_bot = new Database("./BD/db_bot.sqlite");
 const tokenb = process.env.TOKEN_B;
+const I = process.env.TAG_I;
+const II = process.env.TAG_II;
+const III = process.env.TAG_III;
+const IV = process.env.TAG_IV;
+const V = process.env.TAG_V;
+const VI = process.env.TAG_VI;
+const VII = process.env.TAG_VII;
 
 const rolBrawlPath = path.join(process.cwd(), "Brawl", "rolbrawl.json");
 const { rolpresi1, rolvice1, rolvete1, rol1,

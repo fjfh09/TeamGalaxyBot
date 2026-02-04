@@ -15,7 +15,7 @@ async function main() {
     for (const dir of slashDirs) {
         const dirPath = path.join(process.cwd(), "slashs", dir);
         if (fs.statSync(dirPath).isDirectory()) {
-             const slashcommandsFiles = fs.readdirSync(dirPath).filter(file => file.endsWith(".js"));
+             const slashcommandsFiles = fs.readdirSync(dirPath).filter(file => file.endsWith(".js") || file.endsWith(".ts"));
              for (const file of slashcommandsFiles) {
                  try {
                      const filePath = path.join(dirPath, file);

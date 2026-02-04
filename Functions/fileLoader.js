@@ -4,7 +4,7 @@ import path from "path";
 export async function loadFiles(dirName) {
     // Generate absolute path
     const absolutePath = path.join(process.cwd(), dirName);
-    const pattern = `${absolutePath.replace(/\\/g, "/")}/**/*.js`;
+    const pattern = `${absolutePath.replace(/\\/g, "/")}/**/*.{js,ts}`;
     
     // glob v10+ returns a Promise, and we need windowsPathsNoEscape: true maybe? 
     // Defaults are usually fine for simple globs.

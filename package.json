@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "reload": "tsx slashcommands.js",
     "start": "pm2 start ecosystem.config.cjs",
-    "stop": "pm2 stop ecosystem.config.cjs",
-    "restart": "pm2 restart ecosystem.config.cjs",
+    "stop": "pm2 stop TeamGalaxyBot",
+    "restart": "pm2 restart TeamGalaxyBot",
     "dev": "tsx watch index.js",
     "build": "tsc"
   },
